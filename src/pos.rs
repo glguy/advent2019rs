@@ -18,6 +18,10 @@ impl Pos {
         self
     }
 
+    pub fn norm1(self) -> i64 {
+        self.x.abs() + self.y.abs()
+    }
+
     pub fn turn_clockwise(self) -> Self {
         Pos {
             x: -self.y,

@@ -2,6 +2,7 @@ use advent::intcode::{parse_program, Machine, Step};
 
 fn main() {
     println!("Part 1: {}", solve1());
+    println!("Part 2: {}", solve2());
 }
 
 fn solve1() -> i64 {
