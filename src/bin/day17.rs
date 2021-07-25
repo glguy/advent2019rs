@@ -22,7 +22,7 @@ fn main() {
     let input = load_input_file(17);
     let mut pgm = parse_program(&input).unwrap();
     let output = to_ascii(&simple_machine(&pgm, &[]).unwrap());
-    let (start, world) = scan_map(&output);
+    let (world, start) = scan_map(&output);
     print!("Part 1: {}\n", part1(&world));
     print!("Part 2: {}\n", part2(&mut pgm, &world, start));
 }
@@ -82,7 +82,7 @@ fn build_program(path: Instructions) -> String {
 }
 
 // Convert intcode output into a starting location and world map
-fn scan_map(output: &str) -> (Pos, HashSet<Pos>) {
+fn scan_map(output: &str) -> (HashSet<Pos>, Pos) {
     let mut start = Pos::ORIGIN;
     let mut world = HashSet::new();
     for (y, line) in output.lines().enumerate() {
@@ -104,7 +104,7 @@ fn scan_map(output: &str) -> (Pos, HashSet<Pos>) {
             }
         }
     }
-    (start, world)
+    (world, start)
 }
 
 // Convert the world map and starting point into a sequence
@@ -143,6 +143,8 @@ fn render_instructions(instructions: Instructions) -> String {
         .join(",")
 }
 
+// Find the main routine and list of subroutines that generates a given
+// instruction sequence while fitting within the subroutine constraints
 fn program_search<'a>(target: Instructions<'a>) -> Option<(Vec<usize>, Vec<Instructions<'a>>)> {
     let mut main_routine: Vec<usize> = vec![];
     let mut subroutines: Vec<(usize, usize)> = vec![];
@@ -151,7 +153,7 @@ fn program_search<'a>(target: Instructions<'a>) -> Option<(Vec<usize>, Vec<Instr
 
     while lo < target.len() {
         if hi >= target.len() {
-            // Final chunk didn't work, rollback
+            // rollback latest subroutine call
             match main_routine.pop() {
                 None => return None,
                 Some(j) => {
@@ -180,7 +182,7 @@ fn program_search<'a>(target: Instructions<'a>) -> Option<(Vec<usize>, Vec<Instr
             None => {
                 if render_instructions(piece).len() > SUBLEN {
                     // The fragment is too long to be named
-                    // All future fragments would be too, so skip to the end
+                    // All future fragments would be too; trigger rollback
                     hi = usize::MAX;
                 } else if subroutines.len() < SUBNAMES.len() {
                     // Allocate a new named fragment
