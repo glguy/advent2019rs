@@ -1,3 +1,5 @@
+pub mod iterator;
+
 use std::convert::TryFrom;
 use std::num::ParseIntError;
 use std::ops::{Index, IndexMut};

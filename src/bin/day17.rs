@@ -54,11 +54,10 @@ fn part2(pgm: &mut [i64], world: &HashSet<Pos>, start: Pos) -> i64 {
     pgm[0] = 2;
 
     // Run program with computed input values and return the final output value
-    simple_machine(&pgm, &from_ascii(&input_string))
+    *simple_machine(&pgm, &from_ascii(&input_string))
         .unwrap()
         .last()
         .unwrap()
-        .to_owned()
 }
 
 // Compute the ASCII input that solves the robot puzzle
