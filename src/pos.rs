@@ -47,6 +47,33 @@ pub enum Dir {
 
 impl Dir {
     pub const ELEMS: [Dir; 4] = [Dir::N, Dir::S, Dir::E, Dir::W];
+
+    pub fn turn_clockwise(self) -> Dir {
+        match self {
+            Dir::N => Dir::E,
+            Dir::S => Dir::W,
+            Dir::E => Dir::S,
+            Dir::W => Dir::N,
+        }
+    }
+
+    pub fn turn_counterclockwise(self) -> Dir {
+        match self {
+            Dir::N => Dir::W,
+            Dir::S => Dir::E,
+            Dir::E => Dir::N,
+            Dir::W => Dir::S,
+        }
+    }
+
+    pub fn turn_around(self) -> Dir {
+        match self {
+            Dir::N => Dir::S,
+            Dir::S => Dir::N,
+            Dir::E => Dir::W,
+            Dir::W => Dir::E,
+        }
+    }
 }
 
 impl Add for Pos {

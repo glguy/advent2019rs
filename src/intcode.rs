@@ -176,6 +176,14 @@ pub fn simple_machine(pgm: &[i64], inputs: &[i64]) -> Option<Vec<i64>> {
     None
 }
 
+pub fn to_ascii(vals: &[i64]) -> String {
+    vals.iter().map(|&x| x as u8 as char).collect()
+}
+
+pub fn from_ascii(val: &str) -> Vec<i64> {
+    val.bytes().map(|x| x as i64).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
