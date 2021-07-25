@@ -10,14 +10,14 @@ const SUBNAMES: [&'static str; 3] = ["A", "B", "C"];
 enum Turn {
     /// Right turn
     R,
-    /// Left turn 
+    /// Left turn
     L,
 }
 
 /// A sequence of turns and steps to give to the robot
 type Instructions<'a> = &'a [(Turn, i64)];
 
-/// Parse the input file and print solutions to both parts 
+/// Parse the input file and print solutions to both parts
 fn main() {
     let input = load_input_file(17);
     let mut pgm = parse_program(&input).unwrap();
@@ -36,13 +36,8 @@ fn is_surrounded(world: &HashSet<Pos>, p: Pos) -> bool {
 fn part1(world: &HashSet<Pos>) -> i64 {
     world
         .iter()
-        .filter_map(|&p| {
-            if is_surrounded(world, p) {
-                Some(p.x * p.y)
-            } else {
-                None
-            }
-        })
+        .filter(|&&p| is_surrounded(world, p))
+        .map(|p| p.x * p.y)
         .sum()
 }
 
@@ -72,7 +67,11 @@ fn build_program(path: Instructions) -> String {
     let (main_routine, subroutines) = program_search(&path).unwrap();
 
     // Build corresponding text input
-    let mut input_string = main_routine.join(",");
+    let mut input_string = main_routine
+        .into_iter()
+        .map(|i| SUBNAMES[i])
+        .collect::<Vec<&'static str>>()
+        .join(",");
     input_string += "\n";
     for subroutine in subroutines {
         input_string += &render_instructions(&subroutine);
@@ -144,126 +143,56 @@ fn render_instructions(instructions: Instructions) -> String {
         .join(",")
 }
 
+fn program_search<'a>(target: Instructions<'a>) -> Option<(Vec<usize>, Vec<Instructions<'a>>)> {
+    let mut main_routine: Vec<usize> = vec![];
+    let mut subroutines: Vec<(usize, usize)> = vec![];
+    let mut lo: usize = 0;
+    let mut hi: usize = 0;
 
-fn program_search<'a>(
-    mut target: Instructions<'a>,
-) -> Option<(Vec<&'static str>, Vec<Instructions<'a>>)> {
-    let mut main_routine = vec![];
-    let mut subroutines = vec![];
-    let mut n = 0;
-
-    struct History<'a> {
-        n: usize,
-        target: Instructions<'a>,
-        allocated: bool,
-    }
-    let mut history: Vec<History> = vec![];
-
-    while !target.is_empty() {
-        if n >= target.len() {
-            match history.pop() {
+    while lo < target.len() {
+        if hi >= target.len() {
+            // Final chunk didn't work, rollback
+            match main_routine.pop() {
                 None => return None,
-                Some(prev) => {
-                    n = prev.n;
-                    target = prev.target;
-                    if prev.allocated {
+                Some(j) => {
+                    hi = lo;
+                    let (slo,shi) = subroutines[j];
+                    lo -= shi - slo;
+                    if lo == slo {
                         subroutines.pop();
                     }
-                    main_routine.pop();
                 }
             }
         }
-        n += 1;
+        hi += 1;
 
-        let (piece, rest) = target.split_at(n);
-        match subroutines.iter().position(|&sub| sub == piece) {
-            // This fragment is already named
+        let piece = &target[lo..hi];
+
+        // Check if this piece already has a name
+        match subroutines.iter().position(|&(a,b)| &target[a..b] == piece) {
+            // This fragment is already named so use that name
             Some(i) => {
-                main_routine.push(SUBNAMES[i]);
-
-                history.push(History {
-                    n,
-                    target,
-                    allocated: false,
-                });
-                n = 0;
-                target = rest;
+                main_routine.push(i);
+                lo = hi;
             }
+            
             // This fragment is not yet named
             None => {
                 if render_instructions(piece).len() > SUBLEN {
                     // The fragment is too long to be named
                     // All future fragments would be too, so skip to the end
-                    n = usize::MAX;
+                    hi = usize::MAX;
                 } else if subroutines.len() < SUBNAMES.len() {
                     // Allocate a new named fragment
-                    main_routine.push(SUBNAMES[subroutines.len()]);
-                    subroutines.push(piece);
-
-                    history.push(History {
-                        n,
-                        target,
-                        allocated: true,
-                    });
-                    n = 0;
-                    target = rest;
+                    let s = subroutines.len();
+                    subroutines.push((lo,hi));
+                    main_routine.push(s);
+                    lo = hi;
                 }
             }
         }
     }
 
-    Some((main_routine, subroutines))
+    Some((main_routine,
+    subroutines.into_iter().map(|(a,b)| &target[a..b]).collect()))
 }
-
-/*
-
-fn program_search<'a>(
-    target: Instructions<'a>,
-) -> Option<(Vec<&'static str>, Vec<Instructions<'a>>)> {
-    fn go<'a>(
-        main_routine: &mut Vec<&'static str>,
-        subroutines: &mut Vec<Instructions<'a>>,
-        target: &'a [(Turn, i64)],
-    ) -> bool {
-        if target.is_empty() {
-            return true;
-        }
-
-        for n in 1..=target.len() {
-            let (piece, target) = target.split_at(n);
-            match subroutines.iter().position(|&sub| sub == piece) {
-                Some(i) => {
-                    main_routine.push(SUBNAMES[i]);
-                    if go(main_routine, subroutines, target) {
-                        return true;
-                    }
-                    main_routine.pop();
-                }
-                None => {
-                    if render_instructions(piece).len() > SUBLEN {
-                        return false;
-                    }
-
-                    if subroutines.len() < SUBNAMES.len() {
-                        main_routine.push(SUBNAMES[subroutines.len()]);
-                        subroutines.push(piece);
-                        if go(main_routine, subroutines, target) {
-                            return true;
-                        }
-                        subroutines.pop();
-                        main_routine.pop();
-                    }
-                }
-            }
-        }
-        false
-    }
-    let mut main_routine = vec![];
-    let mut subroutines = vec![];
-    if go(&mut main_routine, &mut subroutines, target) {
-        Some((main_routine, subroutines))
-    } else {
-        None
-    }
-}
-*/
