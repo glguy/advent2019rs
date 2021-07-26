@@ -70,9 +70,9 @@ fn move_robot(machine: &mut Machine, dir: Dir) -> Response {
     }
 
     match machine.step() {
-        Ok(Step::Output(0)) => return Response::Stuck,
-        Ok(Step::Output(1)) => return Response::Moved,
-        Ok(Step::Output(2)) => return Response::Found,
+        Ok(Step::Output(0)) => Response::Stuck,
+        Ok(Step::Output(1)) => Response::Moved,
+        Ok(Step::Output(2)) => Response::Found,
         _ => panic!("bad machine state"),
     }
 }

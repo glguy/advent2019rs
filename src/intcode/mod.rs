@@ -19,10 +19,7 @@ pub struct Machine {
 impl Index<usize> for Machine {
     type Output = i64;
     fn index(&self, idx: usize) -> &i64 {
-        match self.memory.get(idx) {
-            None => &0,
-            Some(val) => val,
-        }
+        self.memory.get(idx).unwrap_or(&0)
     }
 }
 

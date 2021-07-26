@@ -10,8 +10,8 @@ fn main() {
     let pgm = parse_program(&input).unwrap();
     let m = Machine::new(pgm);
 
-    print!("Part 1: {}\n", part1(&m));
-    print!("Part 2: {}\n", part2(&m));
+    println!("Part 1: {}", part1(&m));
+    println!("Part 2: {}", part2(&m));
 }
 
 fn make_network(m: &Machine) -> Vec<Machine> {
@@ -25,8 +25,8 @@ fn make_network(m: &Machine) -> Vec<Machine> {
     network
 }
 
-fn part1(m: &Machine) -> i64 {
-    let mut network = make_network(&m);
+fn part1(machine: &Machine) -> i64 {
+    let mut network = make_network(&machine);
     let mut packets = vec![VecDeque::new(); network.len()];
 
     loop {
@@ -76,22 +76,22 @@ fn part2(m: &Machine) -> i64 {
                 Step::Halt => panic!("host halted"),
                 Step::Input(i) => match packets[host_id].pop_front() {
                     None => host[i] = -1,
-                    Some(p) => {
+                    Some(packet) => {
                         stalls = 0;
-                        host[i] = p.x;
+                        host[i] = packet.x;
                         let i = host.step().unwrap().input().unwrap();
-                        host[i] = p.y
+                        host[i] = packet.y
                     }
                 },
-                Step::Output(d) => {
+                Step::Output(destination) => {
                     stalls = 0;
                     let x = host.step().unwrap().output().unwrap();
                     let y = host.step().unwrap().output().unwrap();
-                    let p = Packet { x, y };
-                    if d == 255 {
-                        restart = p
+                    let packet = Packet { x, y };
+                    if destination == 255 {
+                        restart = packet
                     } else {
-                        packets[d as usize].push_back(p);
+                        packets[destination as usize].push_back(packet);
                     }
                 }
             }

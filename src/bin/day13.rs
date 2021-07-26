@@ -6,8 +6,8 @@ fn main() {
     let pgm = parse_program(&input).unwrap();
     let m = Machine::new(pgm);
 
-    print!("{}\n", part1(m.clone()));
-    print!("{}\n", part2(m));
+    println!("{}", part1(m.clone()));
+    println!("{}", part2(m));
 }
 
 fn part1(mut m: Machine) -> usize {

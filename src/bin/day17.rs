@@ -4,7 +4,7 @@ use advent::pos::{Dir, Pos};
 use std::collections::HashSet;
 
 const SUBLEN: usize = 20;
-const SUBNAMES: [&'static str; 3] = ["A", "B", "C"];
+const SUBNAMES: [&str; 3] = ["A", "B", "C"];
 
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum Turn {
@@ -23,8 +23,8 @@ fn main() {
     let mut pgm = parse_program(&input).unwrap();
     let output = to_ascii(&simple_machine(&pgm, &[]).unwrap());
     let (world, start) = scan_map(&output);
-    print!("Part 1: {}\n", part1(&world));
-    print!("Part 2: {}\n", part2(&mut pgm, &world, start));
+    println!("Part 1: {}", part1(&world));
+    println!("Part 2: {}", part2(&mut pgm, &world, start));
 }
 
 /// Predicate for locations surrounded by positions in the world
@@ -69,7 +69,7 @@ fn build_program(path: Instructions) -> String {
     let mut input_string = main_routine
         .into_iter()
         .map(|i| SUBNAMES[i])
-        .collect::<Vec<&'static str>>()
+        .collect::<Vec<&str>>()
         .join(",");
     input_string += "\n";
     for subroutine in subroutines {
@@ -144,7 +144,7 @@ fn render_instructions(instructions: Instructions) -> String {
 
 // Find the main routine and list of subroutines that generates a given
 // instruction sequence while fitting within the subroutine constraints
-fn program_search<'a>(target: Instructions<'a>) -> Option<(Vec<usize>, Vec<Instructions<'a>>)> {
+fn program_search(target: Instructions) -> Option<(Vec<usize>, Vec<Instructions>)> {
     let mut main_routine: Vec<usize> = vec![];
     let mut subroutines: Vec<(usize, usize)> = vec![];
     let mut lo: usize = 0;

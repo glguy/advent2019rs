@@ -5,15 +5,15 @@ fn main() {
     let pgm = parse_program(&input).unwrap();
     let m = Machine::new(pgm);
 
-    print!("Part 1: {}\n", part1(m.clone()));
-    print!("Part 2: {}\n", part2(m));
+    println!("Part 1: {}", part1(m.clone()));
+    println!("Part 2: {}", part2(m));
 }
 
 fn query(mut m: Machine, x: i64, y: i64) -> bool {
     let i = m.step().unwrap().input().unwrap();
     m[i] = x;
-    let j = m.step().unwrap().input().unwrap();
-    m[j] = y;
+    let i = m.step().unwrap().input().unwrap();
+    m[i] = y;
     m.step().unwrap().output().unwrap() != 0
 }
 
