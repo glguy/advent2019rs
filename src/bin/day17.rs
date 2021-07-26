@@ -21,7 +21,7 @@ type Instructions<'a> = &'a [(Turn, i64)];
 fn main() {
     let input = load_input_file(17);
     let mut pgm = parse_program(&input).unwrap();
-    let output = to_ascii(&simple_machine(&pgm, &[]).unwrap());
+    let output = to_ascii(&simple_machine(&pgm, &[]));
     let (world, start) = scan_map(&output);
     println!("Part 1: {}", part1(&world));
     println!("Part 2: {}", part2(&mut pgm, &world, start));
@@ -55,7 +55,6 @@ fn part2(pgm: &mut [i64], world: &HashSet<Pos>, start: Pos) -> i64 {
 
     // Run program with computed input values and return the final output value
     *simple_machine(&pgm, &from_ascii(&input_string))
-        .unwrap()
         .last()
         .unwrap()
 }

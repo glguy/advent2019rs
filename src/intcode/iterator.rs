@@ -37,4 +37,4 @@ pub trait MachineIteratorExt: Iterator {
     }
 }
 
-impl<I: Iterator> MachineIteratorExt for I {}
+impl<I: Iterator<Item = i64>> MachineIteratorExt for I {}

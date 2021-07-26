@@ -9,8 +9,8 @@ fn main() {
 fn solve() -> (i64, i64) {
     let input = advent::load_input_file(9);
     let pgm = parse_program(&input).unwrap();
-    let p1 = simple_machine(&pgm, &[1]).unwrap()[0];
-    let p2 = simple_machine(&pgm, &[2]).unwrap()[0];
+    let p1 = simple_machine(&pgm, &[1])[0];
+    let p2 = simple_machine(&pgm, &[2])[0];
     (p1, p2)
 }
 
