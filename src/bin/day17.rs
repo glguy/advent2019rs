@@ -1,7 +1,7 @@
-use advent::intcode::{from_ascii, parse_program, simple_machine, to_ascii};
-use advent::load_input_file;
-use advent::pos::{Dir, Pos};
 use std::collections::HashSet;
+use std::iter::empty;
+use advent::intcode::iterator::MachineIteratorExt;
+use advent::pos::{Dir, Pos};
 
 const SUBLEN: usize = 20;
 const SUBNAMES: [&str; 3] = ["A", "B", "C"];
@@ -19,12 +19,12 @@ type Instructions<'a> = &'a [(Turn, i64)];
 
 /// Parse the input file and print solutions to both parts
 fn main() {
-    let input = load_input_file(17);
-    let mut pgm = parse_program(&input).unwrap();
-    let output = to_ascii(&simple_machine(&pgm, &[]));
+    let input = advent::load_input_file(17);
+    let pgm = advent::intcode::parse_program(&input).unwrap();
+    let output: String = empty().machined(pgm.clone()).map(|x| x as u8 as char).collect();
     let (world, start) = scan_map(&output);
     println!("Part 1: {}", part1(&world));
-    println!("Part 2: {}", part2(&mut pgm, &world, start));
+    println!("Part 2: {}", part2(pgm, &world, start));
 }
 
 /// Predicate for locations surrounded by positions in the world
@@ -43,7 +43,7 @@ fn part1(world: &HashSet<Pos>) -> i64 {
 
 /// Compute a program that guides the robot across the whole world map,
 /// run that program, and find the final score value.
-fn part2(pgm: &mut [i64], world: &HashSet<Pos>, start: Pos) -> i64 {
+fn part2(mut pgm: Vec<i64>, world: &HashSet<Pos>, start: Pos) -> i64 {
     // Solve the uncompressed robot instruction sequence
     let path = world_path(&world, start);
 
@@ -54,9 +54,7 @@ fn part2(pgm: &mut [i64], world: &HashSet<Pos>, start: Pos) -> i64 {
     pgm[0] = 2;
 
     // Run program with computed input values and return the final output value
-    *simple_machine(&pgm, &from_ascii(&input_string))
-        .last()
-        .unwrap()
+    input_string.chars().map(|x| x as i64).machined(pgm).last().unwrap()
 }
 
 // Compute the ASCII input that solves the robot puzzle
