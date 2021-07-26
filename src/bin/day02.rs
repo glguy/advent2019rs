@@ -1,46 +1,32 @@
-use advent::intcode::{parse_program, Machine, Step};
+use advent::intcode::Machine;
 
 fn main() {
-    println!("Part 1: {}", solve1());
-    println!("Part 2: {}", solve2());
+    let input = advent::load_input_file(2);
+    let pgm = advent::intcode::parse_program(&input).unwrap();
+    println!("Part 1: {}", solve1(&pgm));
+    println!("Part 2: {}", solve2(&pgm));
 }
 
-fn solve1() -> i64 {
-    let input = advent::load_input_file(2);
-    let pgm = parse_program(&input).unwrap();
-    let mut machine = Machine::new(pgm);
-    machine[1] = 12;
-    machine[2] = 2;
-
-    match machine.step() {
-        Ok(Step::Halt) => {},
-        _ => panic!("Missing output"),
-    }
-
+fn eval(pgm: &[i64], x: i64, y: i64) -> i64 {
+    let mut machine = Machine::new(pgm.to_vec());
+    machine[1] = x;
+    machine[2] = y;
+    let _ = machine.step();
     machine[0]
 }
 
-fn solve2() -> i64 {
-    let input = advent::load_input_file(2);
-    let pgm = parse_program(&input).unwrap();
-    let machine = Machine::new(pgm);
+fn solve1(pgm: &[i64]) -> i64 {
+    eval(pgm, 12, 2)
+}
 
+fn solve2(pgm: &[i64]) -> i64 {
     for x in 0..100 {
         for y in 0..100 {
-            let mut machine = machine.clone();
-            machine[1] = x;
-            machine[2] = y;
-            match machine.step() {
-                Ok(Step::Halt) => {},
-                _ => panic!("Missing output"),
-            }
-
-            if machine[0] == 19690720 {
+            if eval(pgm, x, y) == 19690720 {
                 return x * 100 + y;
             }
         }
     }
-
     panic!("no answer");
 }
 
@@ -50,7 +36,9 @@ mod test {
 
     #[test]
     fn day11() {
-        assert_eq!(solve1(), 7210630);
-        assert_eq!(solve2(), 3892);
+        let input = advent::load_input_file(2);
+        let pgm = advent::intcode::parse_program(&input).unwrap();
+        assert_eq!(solve1(&pgm), 7210630);
+        assert_eq!(solve2(&pgm), 3892);
     }
 }
