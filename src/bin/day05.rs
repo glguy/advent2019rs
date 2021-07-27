@@ -1,5 +1,4 @@
-use advent::intcode::iterator::MachineIteratorExt;
-use std::iter::once;
+use advent::intcode::iterator::machine;
 
 fn main() {
     let (p1, p2) = solve();
@@ -11,8 +10,8 @@ fn solve() -> (i64, i64) {
     let input = advent::load_input_file(5);
     let pgm = advent::intcode::parse_program(&input).unwrap();
 
-    let p1 = once(1).machined(pgm.clone()).last().unwrap();
-    let p2 = once(5).machined(pgm).last().unwrap();
+    let p1 = machine(pgm.clone(), [1]).last().unwrap();
+    let p2 = machine(pgm, [5]).last().unwrap();
     (p1, p2)
 }
 

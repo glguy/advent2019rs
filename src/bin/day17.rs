@@ -1,6 +1,5 @@
 use std::collections::HashSet;
-use std::iter::empty;
-use advent::intcode::iterator::MachineIteratorExt;
+use advent::intcode::iterator::machine;
 use advent::pos::{Dir, Pos};
 
 const SUBLEN: usize = 20;
@@ -21,7 +20,7 @@ type Instructions<'a> = &'a [(Turn, i64)];
 fn main() {
     let input = advent::load_input_file(17);
     let pgm = advent::intcode::parse_program(&input).unwrap();
-    let output: String = empty().machined(pgm.clone()).map(|x| x as u8 as char).collect();
+    let output: String = machine(pgm.clone(), []).map(|x| x as u8 as char).collect();
     let (world, start) = scan_map(&output);
     println!("Part 1: {}", part1(&world));
     println!("Part 2: {}", part2(pgm, &world, start));
@@ -49,12 +48,13 @@ fn part2(mut pgm: Vec<i64>, world: &HashSet<Pos>, start: Pos) -> i64 {
 
     // Compute the intcode program input that solves the puzzle
     let input_string = build_program(&path);
+    let input = input_string.chars().map(|x| x as i64);
 
     // Switch program into interactive mode
     pgm[0] = 2;
 
     // Run program with computed input values and return the final output value
-    input_string.chars().map(|x| x as i64).machined(pgm).last().unwrap()
+    machine(pgm, input).last().unwrap()
 }
 
 // Compute the ASCII input that solves the robot puzzle

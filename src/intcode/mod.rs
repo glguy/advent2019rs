@@ -14,6 +14,7 @@ pub struct Machine {
     pc: i64,
     rel_base: i64,
     memory: Vec<i64>,
+
 }
 
 impl Index<usize> for Machine {
@@ -56,57 +57,44 @@ impl Machine {
     }
 
     pub fn step(&mut self) -> Result<Step, Error> {
-        let mut opcode;
-
-        macro_rules! read {
-            ( $arg:literal ) => {{
-                let pos = self.arg_ptr(opcode, $arg)?;
-                self[pos]
-            }};
-        }
-
-        macro_rules! jump {
-            ( $pc:expr, $res:expr ) => {{
-                let r = $res; // <- must be computed before pc updates
-                self.pc = $pc;
-                return Ok(r);
-            }};
-        }
-
-        macro_rules! simple {
-            ( $arg:literal, $val:expr ) => {{
-                let v = $val;
-                let pos = self.arg_ptr(opcode, $arg)?;
-                self[pos] = v;
-                self.pc += $arg + 1;
-            }};
-        }
-
-        macro_rules! arithmetic {
-            ( $op:expr ) => {{
-                let v1 = read!(1);
-                let v2 = read!(2);
-                let r = $op(v1, v2).ok_or(Error::ArithmeticOverflow)?;
-                let pos = self.arg_ptr(opcode, 3)?;
-                self[pos] = r;
-                self.pc += 4;
-            }};
-        }
-
         loop {
-            opcode = self[to_usize(self.pc)?];
+            let opcode = self[to_usize(self.pc)?];
+
+            macro_rules! ptr {
+                ( $arg:literal ) => { self.arg_ptr(opcode, $arg)? }
+            }
+
+            macro_rules! val {
+                ( $arg:literal ) => { self[ptr!($arg)] };
+            }
+
+            macro_rules! io {
+                ( $res:expr ) => {{
+                    let r = $res; // <- must be computed before pc updates
+                    self.pc += 2;
+                    break Ok(r);
+                }};
+            }
+
+            macro_rules! compute {
+                ( $val:expr ) => {{
+                    let p = ptr!(3);
+                    self[p] = $val;
+                    self.pc += 4;
+                }};
+            }
 
             match opcode % 100 {
-                1 => arithmetic!(i64::checked_add),
-                2 => arithmetic!(i64::checked_mul),
-                3 => jump!(self.pc + 2, Step::Input(self.arg_ptr(opcode, 1)?)),
-                4 => jump!(self.pc + 2, Step::Output(read!(1))),
-                5 => self.pc = if read!(1) != 0 { read!(2) } else { self.pc + 3 },
-                6 => self.pc = if read!(1) == 0 { read!(2) } else { self.pc + 3 },
-                7 => simple!(3, (read!(1) < read!(2)) as i64),
-                8 => simple!(3, (read!(1) == read!(2)) as i64),
+                1 => compute!(val!(1).checked_add(val!(2)).ok_or(Error::ArithmeticOverflow)?),
+                2 => compute!(val!(1).checked_mul(val!(2)).ok_or(Error::ArithmeticOverflow)?),
+                3 => io!(Step::Input(ptr!(1))),
+                4 => io!(Step::Output(val!(1))),
+                5 => if val!(1) != 0 { self.pc = val!(2) } else { self.pc += 3 },
+                6 => if val!(1) == 0 { self.pc = val!(2) } else { self.pc += 3 },
+                7 => compute!((val!(1) < val!(2)) as i64),
+                8 => compute!((val!(1) == val!(2)) as i64),
                 9 => {
-                    self.rel_base += read!(1);
+                    self.rel_base += val!(1);
                     self.pc += 2
                 }
                 99 => break Ok(Step::Halt),
@@ -154,56 +142,32 @@ pub enum Error {
     ArithmeticOverflow,
 }
 
-pub fn simple_machine(pgm: &[i64], inputs: &[i64]) -> Option<Vec<i64>> {
-    let mut m = Machine::new(pgm.to_vec());
-    let mut outputs = vec![];
-    let mut i = 0;
-
-    while let Ok(res) = m.step() {
-        match res {
-            Step::Halt => return Some(outputs),
-            Step::Output(o) => outputs.push(o),
-            Step::Input(pos) => match inputs.get(i) {
-                None => break,
-                Some(&val) => {
-                    m[pos] = val;
-                    i += 1
-                }
-            },
-        }
-    }
-    None
-}
-
-pub fn to_ascii(vals: &[i64]) -> String {
-    vals.iter().map(|&x| x as u8 as char).collect()
-}
-
-pub fn from_ascii(val: &str) -> Vec<i64> {
-    val.bytes().map(|x| x as i64).collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
 
+    fn run<I: IntoIterator<Item = i64>>(pgm: &[i64], input: I) -> Vec<i64> {
+        use iterator::machine;
+        machine(input, pgm.to_vec()).collect()
+    }
+
     #[test]
     fn it_works() {
         let pgm = [3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
-        assert_eq!(simple_machine(&pgm, &[0]), Some(vec![0]));
-        assert_eq!(simple_machine(&pgm, &[10]), Some(vec![1]));
+        assert_eq!(run(&pgm, [0]), vec![0]);
+        assert_eq!(run(&pgm, [10]), vec![1]);
     }
 
     #[test]
     fn day9_tests() {
         let pgm = [1102, 34915192, 34915192, 7, 4, 7, 99, 0];
-        assert_eq!(simple_machine(&pgm, &[]), Some(vec![1219070632396864]));
+        assert_eq!(run(&pgm, []), vec![1219070632396864]);
         let quine = [
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
-        assert_eq!(simple_machine(&quine, &[]), Some(quine.to_vec()));
-    }
+        assert_eq!(run(&quine, []), quine.to_vec());
+   }
 
     #[test]
     fn compare_test() {
@@ -212,9 +176,9 @@ mod tests {
             0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4,
             20, 1105, 1, 46, 98, 99,
         ];
-        assert_eq!(simple_machine(&pgm, &[7]), Some(vec![999]));
-        assert_eq!(simple_machine(&pgm, &[8]), Some(vec![1000]));
-        assert_eq!(simple_machine(&pgm, &[9]), Some(vec![1001]));
+        assert_eq!(run(&pgm, [7]), vec![999]);
+        assert_eq!(run(&pgm, [8]), vec![1000]);
+        assert_eq!(run(&pgm, [9]), vec![1001]);
     }
 
     #[test]
@@ -225,12 +189,7 @@ mod tests {
         let mut m = Machine::new(pgm);
         m[1] = 12;
         m[2] = 2;
-        loop {
-            match m.step() {
-                Ok(Step::Halt) => break,
-                _ => {}
-            }
-        }
+        let _ = m.step();
         assert_eq!(m[0], 7210630);
     }
 }

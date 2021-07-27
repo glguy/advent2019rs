@@ -7,7 +7,7 @@ fn main() {
 
     let numbers: Vec<i64> = input.lines().flat_map(i64::from_str).collect();
 
-    let p1: i64 = numbers.iter().cloned().map(fuel1).sum();
+    let p1: i64 = numbers.iter().copied().map(fuel1).sum();
     println!("Part 1: {}", p1);
 
     let p2: i64 = numbers.into_iter().map(fuel2).sum();

@@ -1,6 +1,9 @@
-use advent::intcode::{parse_program, Machine, Step};
+use advent::intcode::parse_program;
+use advent::intcode::iterator::machine;
 use std::collections::HashMap;
 use advent::pos::Pos;
+use std::cell::Cell;
+use itertools::Itertools;
 
 fn main() {
     println!("Part 1: {}", solve1());
@@ -10,16 +13,14 @@ fn main() {
 fn solve1() -> usize {
     let input = advent::load_input_file(11);
     let pgm = parse_program(&input).unwrap();
-    let machine = Machine::new(pgm);
-    let paint = painter(machine, 0);
+    let paint = painter(pgm, 0);
     paint.len()
 }
 
 fn solve2() {
     let input = advent::load_input_file(11);
     let pgm = parse_program(&input).unwrap();
-    let machine = Machine::new(pgm);
-    let paint = painter(machine, 1);
+    let paint = painter(pgm, 1);
 
     let min_x = paint.keys().map(|x|x.x).min().unwrap();
     let min_y = paint.keys().map(|x|x.y).min().unwrap();
@@ -40,30 +41,25 @@ fn solve2() {
     }
 }
 
-fn painter(mut machine: Machine, start: i64) -> HashMap<Pos, i64> {
+fn painter(pgm: Vec<i64>, start: i64) -> HashMap<Pos, i64> {
     let mut here = Pos::ORIGIN;
-    let mut paint = HashMap::new();
-    let mut is_color = true;
+    let mut paint = HashMap::new();    
     let mut dir = Pos { x:0, y:-1 };
+    let current = Cell::new(start);
 
     paint.insert(here, start);
 
-    loop {
-        match machine.step().unwrap() {
-            Step::Halt => return paint,
-            Step::Output(o) => {
-                if is_color {
-                    paint.insert(here, o);
-                } else {
-                    dir = turn(dir, o);
-                    here += dir;
-                }
-                is_color = !is_color;
-            }
-            Step::Input(i) =>
-                machine[i] = *paint.get(&here).unwrap_or(&0),
-        }
+    let inputs = std::iter::from_fn(|| { Some(current.get()) });
+
+    for mut command in &machine(pgm, inputs).chunks(2) {
+        let color = command.next().unwrap();
+        let look = command.next().unwrap();
+        paint.insert(here, color);
+        dir = turn(dir, look);
+        here += dir;
+        current.set(paint.get(&here).copied().unwrap_or(0))
     }
+    paint
 }
 
 fn turn(dir: Pos, turn: i64) -> Pos {

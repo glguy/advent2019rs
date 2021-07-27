@@ -13,28 +13,20 @@ impl<I: Iterator<Item = i64>> Iterator for MachineIterator<I> {
                 Ok(Step::Output(o)) => return Some(o),
                 Ok(Step::Input(i)) => match self.inputs.next() {
                     Some(x) => self.machine[i] = x,
-                    None => {
-                        return None
-                    }
+                    None => return None,
                 },
-                _ => {
-                    return None
-                }
+                _ => return None,
             }
         }
     }
 }
 
-pub trait MachineIteratorExt: Iterator {
-    fn machined(self, pgm: Vec<i64>) -> MachineIterator<Self>
-    where
-        Self: Sized,
-    {
-        MachineIterator {
-            machine: Machine::new(pgm),
-            inputs: self,
-        }
+pub fn machine<I>(pgm: Vec<i64>, inputs: I) -> MachineIterator<I::IntoIter>
+where
+    I: IntoIterator<Item = i64>,
+{
+    MachineIterator {
+        machine: Machine::new(pgm),
+        inputs: inputs.into_iter(),
     }
 }
-
-impl<I: Iterator<Item = i64>> MachineIteratorExt for I {}

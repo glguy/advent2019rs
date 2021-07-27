@@ -25,89 +25,90 @@ fn make_network(m: &Machine) -> Vec<Machine> {
     network
 }
 
-fn part1(machine: &Machine) -> i64 {
-    let mut network = make_network(&machine);
-    let mut packets = vec![VecDeque::new(); network.len()];
+fn part1(m: &Machine) -> i64 {
+    let mut work: VecDeque<(i64, Packet)> = Default::default();
+    let mut network = make_network(m);
 
-    loop {
-        for (host_id, host) in network.iter_mut().enumerate() {
-            match host.step().unwrap() {
-                Step::Halt => panic!("host halted"),
-                Step::Input(i) => match packets[host_id].pop_front() {
-                    None => host[i] = NOPACKET,
-                    Some((x, y)) => {
-                        host[i] = x;
-                        let j = host.step().unwrap().input().unwrap();
-                        host[j] = y
-                    }
-                },
-                Step::Output(d) => {
-                    let x = host.step().unwrap().output().unwrap();
-                    let y = host.step().unwrap().output().unwrap();
-                    if d == NATADDR {
-                        return y;
-                    } else {
-                        packets[d as usize].push_back((x, y));
-                    }
-                }
-            }
+    for host in &mut network {
+        deliver(host, [], &mut work)
+    }
+
+    while let Some((d, p)) = work.pop_front() {
+        if d == NATADDR {
+            return p.y
+        } else {
+            deliver(&mut network[d as usize], [p], &mut work)
         }
     }
+    panic!("no nat sent")
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 struct Packet {
     x: i64,
     y: i64,
 }
 
 fn part2(m: &Machine) -> i64 {
-    let mut network = make_network(&m);
-    let mut packets: Vec<VecDeque<Packet>> = vec![VecDeque::new(); network.len()];
+    let mut work: VecDeque<(i64, Packet)> = Default::default();
+    let mut network = make_network(m);
 
-    let mut stalls = 0;
-    let mut previous = None;
+    for host in &mut network {
+        deliver(host, [], &mut work)
+    }
+
+    let mut prev = None;
     let mut restart = Packet { x: 0, y: 0 };
 
     loop {
-        stalls += 1;
-        for (host_id, host) in network.iter_mut().enumerate() {
-            match host.step().unwrap() {
-                Step::Halt => panic!("host halted"),
-                Step::Input(i) => match packets[host_id].pop_front() {
-                    None => host[i] = -1,
-                    Some(packet) => {
-                        stalls = 0;
-                        host[i] = packet.x;
-                        let i = host.step().unwrap().input().unwrap();
-                        host[i] = packet.y
-                    }
-                },
-                Step::Output(destination) => {
-                    stalls = 0;
-                    let x = host.step().unwrap().output().unwrap();
-                    let y = host.step().unwrap().output().unwrap();
-                    let packet = Packet { x, y };
-                    if destination == 255 {
-                        restart = packet
-                    } else {
-                        packets[destination as usize].push_back(packet);
-                    }
-                }
+        while let Some((d, p)) = work.pop_front() {
+            if d == NATADDR {
+                restart = p
+            } else {
+                deliver(&mut network[d as usize], [p], &mut work)
             }
         }
 
-        if stalls > 1 {
-            if Some(restart.y) == previous {
-                return restart.y;
-            }
-            previous = Some(restart.y);
+        if Some(restart.y) == prev {
+            return restart.y;
+        }
+        prev = Some(restart.y);
+        work.push_back((0, restart));
+    }
+}
 
-            let host = &mut network[0];
-            let i = host.step().unwrap().input().unwrap();
-            host[i] = restart.x;
-            let i = host.step().unwrap().input().unwrap();
-            host[i] = restart.y;
+fn deliver<I: IntoIterator<Item = Packet>>(
+    machine: &mut Machine,
+    inputs: I,
+    outputs: &mut VecDeque<(i64, Packet)>,
+) {
+    let mut iter = inputs.into_iter();
+    let mut stalled = false;
+    loop {
+        match machine.step().unwrap() {
+            Step::Halt => panic!("halt"),
+            Step::Output(d) => {
+                outputs.push_back((
+                    d,
+                    Packet {
+                        x: machine.step().unwrap().output().unwrap(),
+                        y: machine.step().unwrap().output().unwrap(),
+                    },
+                ));
+                stalled = false;
+            }
+            Step::Input(i) => match iter.next() {
+                Some(packet) => {
+                    machine[i] = packet.x;
+                    let i = machine.step().unwrap().input().unwrap();
+                    machine[i] = packet.y;
+                    stalled = false;
+                }
+                None => {
+                    machine[i] = NOPACKET;
+                    if stalled { return } else { stalled = true }
+                }
+            },
         }
     }
 }

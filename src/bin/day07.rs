@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::iter::{from_fn, once};
 use std::rc::Rc;
-use advent::intcode::iterator::MachineIteratorExt;
+use advent::intcode::iterator::machine;
 use permutohedron::Heap;
 
 fn main() {
@@ -37,7 +37,7 @@ fn make_controller(pgm: &[i64], params: &[i64]) -> impl Iterator<Item = i64> {
     params
         .iter()
         .fold(loopbox, |it, &param| {
-            Box::new(once(param).chain(it).machined(pgm.to_vec()))
+            Box::new(machine(pgm.to_vec(), once(param).chain(it)))
         })
         .map(move |x| {
             loopback.borrow_mut().push_back(x);
