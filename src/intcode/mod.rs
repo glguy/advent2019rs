@@ -149,7 +149,7 @@ mod tests {
 
     fn run<I: IntoIterator<Item = i64>>(pgm: &[i64], input: I) -> Vec<i64> {
         use iterator::machine;
-        machine(input, pgm.to_vec()).collect()
+        machine(pgm.to_vec(), input).collect()
     }
 
     #[test]
