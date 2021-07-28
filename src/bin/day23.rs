@@ -10,37 +10,8 @@ fn main() {
     let pgm = parse_program(&input).unwrap();
     let m = Machine::new(pgm);
 
-    println!("Part 1: {}", part1(&m));
-    println!("Part 2: {}", part2(&m));
-}
-
-fn make_network(m: &Machine) -> Vec<Machine> {
-    let mut network = vec![m.clone(); NETSIZE];
-
-    for (host_id, host) in network.iter_mut().enumerate() {
-        let i = host.step().unwrap().input().unwrap();
-        host[i] = host_id as i64;
-    }
-
-    network
-}
-
-fn part1(m: &Machine) -> i64 {
-    let mut work: VecDeque<(i64, Packet)> = Default::default();
-    let mut network = make_network(m);
-
-    for host in &mut network {
-        deliver(host, [], &mut work)
-    }
-
-    while let Some((d, p)) = work.pop_front() {
-        if d == NATADDR {
-            return p.y
-        } else {
-            deliver(&mut network[d as usize], [p], &mut work)
-        }
-    }
-    panic!("no nat sent")
+    println!("Part 1: {}", part1(m.clone()).unwrap());
+    println!("Part 2: {}", part2(m));
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -49,9 +20,28 @@ struct Packet {
     y: i64,
 }
 
-fn part2(m: &Machine) -> i64 {
+fn part1(machine: Machine) -> Option<i64> {
     let mut work: VecDeque<(i64, Packet)> = Default::default();
-    let mut network = make_network(m);
+    let mut network = make_network(machine);
+
+    for host in &mut network {
+        deliver(host, [], &mut work)
+    }
+
+    while let Some((d, p)) = work.pop_front() {
+        if d == NATADDR {
+            return Some(p.y)
+        } else {
+            deliver(&mut network[d as usize], [p], &mut work)
+        }
+    }
+    None
+}
+
+
+fn part2(machine: Machine) -> i64 {
+    let mut work: VecDeque<(i64, Packet)> = Default::default();
+    let mut network = make_network(machine);
 
     for host in &mut network {
         deliver(host, [], &mut work)
@@ -73,8 +63,20 @@ fn part2(m: &Machine) -> i64 {
             return restart.y;
         }
         prev = Some(restart.y);
-        work.push_back((0, restart));
+        deliver(&mut network[0], [restart], &mut work);
     }
+}
+
+fn make_network(mut machine: Machine) -> Vec<Machine> {
+    
+    let i = machine.step().unwrap().input().unwrap();
+    let mut network = vec![machine; NETSIZE];
+
+    for (host_id, host) in network.iter_mut().enumerate() {
+        host[i] = host_id as i64;
+    }
+
+    network
 }
 
 fn deliver<I: IntoIterator<Item = Packet>>(
