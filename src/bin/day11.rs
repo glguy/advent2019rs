@@ -49,9 +49,9 @@ fn painter(pgm: Vec<i64>, start: i64) -> HashMap<Pos, i64> {
 
     paint.insert(here, start);
 
-    let inputs = std::iter::from_fn(|| { Some(current.get()) });
+    let inputs = std::iter::from_fn(|| Some(current.get()));
 
-    for mut command in &machine(pgm, inputs).chunks(2) {
+    for mut command in machine(pgm, inputs).chunks(2).into_iter() {
         let color = command.next().unwrap();
         let look = command.next().unwrap();
         paint.insert(here, color);

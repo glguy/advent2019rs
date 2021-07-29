@@ -1,6 +1,6 @@
 pub mod iterator;
 
-use std::convert::TryFrom;
+use std::convert::{TryInto,TryFrom};
 use std::num::ParseIntError;
 use std::ops::{Index, IndexMut};
 use std::str::FromStr;
@@ -17,15 +17,28 @@ pub struct Machine {
 
 }
 
-impl Index<usize> for Machine {
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct Addr(pub usize);
+
+impl TryFrom<i64> for Addr {
+    type Error = Error;
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        match value.try_into() {
+            Ok(uval) => Ok(Addr(uval)),
+            Err(_) => Err(Error::BadAddress),
+        }
+    }
+}
+
+impl Index<Addr> for Machine {
     type Output = i64;
-    fn index(&self, idx: usize) -> &i64 {
+    fn index(&self, Addr(idx): Addr) -> &i64 {
         self.memory.get(idx).unwrap_or(&0)
     }
 }
 
-impl IndexMut<usize> for Machine {
-    fn index_mut(&mut self, idx: usize) -> &mut i64 {
+impl IndexMut<Addr> for Machine {
+    fn index_mut(&mut self, Addr(idx): Addr) -> &mut i64 {
         if self.memory.len() <= idx {
             let mut new_size = 512;
             while new_size <= idx {
@@ -46,19 +59,19 @@ impl Machine {
         }
     }
 
-    fn arg_ptr(&self, opcode: i64, arg: i64) -> Result<usize, Error> {
-        let pos = to_usize(self.pc + arg)?;
+    fn arg_ptr(&self, opcode: i64, arg: i64) -> Result<Addr, Error> {
+        let pos = (self.pc + arg).try_into()?;
         match opcode / i64::pow(10, 1 + arg as u32) % 10 {
-            0 => to_usize(self[pos]),
+            0 => self[pos].try_into(),
             1 => Ok(pos),
-            2 => to_usize(self[pos] + self.rel_base),
+            2 => (self[pos] + self.rel_base).try_into(),
             _ => Err(Error::BadParameterMode),
         }
     }
 
     pub fn step(&mut self) -> Result<Step, Error> {
         loop {
-            let opcode = self[to_usize(self.pc)?];
+            let opcode = self[self.pc.try_into()?];
 
             macro_rules! ptr {
                 ( $arg:literal ) => { self.arg_ptr(opcode, $arg)? }
@@ -104,18 +117,11 @@ impl Machine {
     }
 }
 
-fn to_usize(val: i64) -> Result<usize, Error> {
-    match usize::try_from(val) {
-        Ok(uval) => Ok(uval),
-        Err(_) => Err(Error::BadAddress),
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Step {
     Halt,
     Output(i64),
-    Input(usize),
+    Input(Addr),
 }
 
 impl Step {
@@ -126,7 +132,7 @@ impl Step {
         }
     }
 
-    pub fn input(self) -> Option<usize> {
+    pub fn input(self) -> Option<Addr> {
         match self {
             Self::Input(i) => Some(i),
             _ => None,
@@ -187,9 +193,9 @@ mod tests {
             fs::read_to_string("/Users/emertens/Source/advent2019/inputs/input02.txt").unwrap();
         let pgm = parse_program(&input).unwrap();
         let mut m = Machine::new(pgm);
-        m[1] = 12;
-        m[2] = 2;
+        m[Addr(1)] = 12;
+        m[Addr(2)] = 2;
         let _ = m.step();
-        assert_eq!(m[0], 7210630);
+        assert_eq!(m[Addr(0)], 7210630);
     }
 }

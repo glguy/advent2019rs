@@ -9,13 +9,14 @@ impl<I: Iterator<Item = i64>> Iterator for MachineIterator<I> {
     type Item = i64;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match self.machine.step() {                    
+            match self.machine.step() {                
                 Ok(Step::Output(o)) => return Some(o),
                 Ok(Step::Input(i)) => match self.inputs.next() {
                     Some(x) => self.machine[i] = x,
                     None => return None,
                 },
-                _ => return None,
+                Ok(Step::Halt) => return None,
+                Err(e) => panic!("Bad machine iterator: {:?}", e),
             }
         }
     }

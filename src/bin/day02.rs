@@ -1,4 +1,4 @@
-use advent::intcode::Machine;
+use advent::intcode::{Addr,Machine};
 
 fn main() {
     let input = advent::load_input_file(2);
@@ -9,10 +9,10 @@ fn main() {
 
 fn eval(pgm: &[i64], x: i64, y: i64) -> i64 {
     let mut machine = Machine::new(pgm.to_vec());
-    machine[1] = x;
-    machine[2] = y;
+    machine[Addr(1)] = x;
+    machine[Addr(2)] = y;
     let _ = machine.step();
-    machine[0]
+    machine[Addr(0)]
 }
 
 fn solve1(pgm: &[i64]) -> i64 {
