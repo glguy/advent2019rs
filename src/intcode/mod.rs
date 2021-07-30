@@ -151,7 +151,6 @@ pub enum Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
     fn run<I: IntoIterator<Item = i64>>(pgm: &[i64], input: I) -> Vec<i64> {
         use iterator::machine;
@@ -189,8 +188,7 @@ mod tests {
 
     #[test]
     fn day02() {
-        let input =
-            fs::read_to_string("/Users/emertens/Source/advent2019/inputs/input02.txt").unwrap();
+        let input = super::super::load_input_file(2);
         let pgm = parse_program(&input).unwrap();
         let mut m = Machine::new(pgm);
         m[Addr(1)] = 12;
