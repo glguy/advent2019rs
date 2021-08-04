@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Hash, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Pos {
@@ -33,6 +33,13 @@ impl Pos {
         Pos {
             x: self.y,
             y: -self.x,
+        }
+    }
+
+    pub fn turn_around(self) -> Self {
+        Pos {
+            x: -self.x,
+            y: -self.y,
         }
     }
 }
@@ -84,9 +91,24 @@ impl Add for Pos {
     }
 }
 
+impl Sub for Pos {
+    type Output = Pos;
+    fn sub(mut self, rhs: Self) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
 impl AddAssign for Pos {
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
+    }
+}
+
+impl SubAssign for Pos {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
     }
 }
