@@ -1,15 +1,10 @@
 use advent::pos::{Dir, Pos};
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use std::iter::FromIterator;
 
 fn main() {
     let input = advent::load_input_file(24);
     let initial = parse_input(input);
-    println!(
-        "{:?}",
-        HashSet::from_iter(initial.iter().copied()) as HashSet<Pos>
-    );
     println!("Part 1: {}", part1(&initial));
     println!("Part 2: {}", part2(&initial));
 }
@@ -54,7 +49,7 @@ fn members<P: Copy + Ord>(world: &HashSet<P>) -> Vec<P> {
 
 fn part1(initial: &[Pos]) -> u64 {
     let mut seen: HashSet<Vec<Pos>> = HashSet::new();
-    let mut current: HashSet<Pos> = HashSet::from_iter(initial.iter().copied());
+    let mut current: HashSet<Pos> = initial.iter().copied().collect();
     while !seen.contains(&members(&current)) {
         seen.insert(members(&current));
         current = step(&current, neighbors1)
@@ -107,7 +102,8 @@ fn part2(initial: &[Pos]) -> usize {
 fn neighbors2((pos, level): (Pos, i64)) -> Vec<(Pos, i64)> {
 
     type Pair<X> = (X, X);
-    let xforms: [Pair<fn(Pos) -> Pos>; 4] = [
+    type PosFn = fn(Pos) -> Pos;
+    let xforms: [Pair<PosFn>; 4] = [
         (|x| x, |x| x),
         (Pos::turn_around, Pos::turn_around),
         (Pos::turn_clockwise, Pos::turn_counterclockwise),

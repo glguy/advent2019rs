@@ -51,7 +51,7 @@ fn part1(inputs: &[Vec<Element>]) -> i64 {
 
 fn part2(input: &[Vec<Element>]) -> u64 {
     input
-        .into_iter()
+        .iter()
         .map(|sim| cycle_length(sim))
         .reduce(lcm)
         .unwrap()
